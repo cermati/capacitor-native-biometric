@@ -48,6 +48,9 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
+  <component name="ProblemsViewState">
+    <option name="selectedIndex" value="1" />
+  </component>
   <component name="ProjectId" id="1aSxDtR19IA1eoq3lkGA6ZDf4zL" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
@@ -105,11 +108,5 @@
       </map>
     </option>
     <option name="oldMeFiltersMigrated" value="true" />
-  </component>
-  <component name="WindowStateProjectService">
-    <state x="630" y="339" key="com.intellij.ide.util.TipDialog" timestamp="1599851239756">
-      <screen x="0" y="23" width="1920" height="968" />
-    </state>
-    <state x="630" y="339" key="com.intellij.ide.util.TipDialog/1920.23.1920.1057/0.23.1920.968@0.23.1920.968" timestamp="1599851239756" />
   </component>
 </project>

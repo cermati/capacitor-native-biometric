@@ -65,4 +65,6 @@ export interface NativeBiometricPlugin {
   setCredentials(options: SetCredentialOptions): Promise<any>;
 
   deleteCredentials(options: DeleteCredentialOptions): Promise<any>;
+
+  getPublicKey(): Promise<any>;
 }

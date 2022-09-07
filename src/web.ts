@@ -32,4 +32,7 @@ export class NativeBiometricWeb
   deleteCredentials(_options: DeleteCredentialOptions): Promise<any> {
     throw new Error("Method not implemented.");
   }
+  getPublicKey(): Promise<any> {
+    throw new Error("Method not implemented.");
+  }
 }
