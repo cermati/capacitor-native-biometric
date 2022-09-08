@@ -7,6 +7,9 @@ import {
   SetCredentialOptions,
   DeleteCredentialOptions,
   Credentials,
+  SignDataOptions,
+  PublicKey,
+  SignedData
 } from "./definitions";
 
 export class NativeBiometricWeb
@@ -30,6 +33,12 @@ export class NativeBiometricWeb
     throw new Error("Method not implemented.");
   }
   deleteCredentials(_options: DeleteCredentialOptions): Promise<any> {
+    throw new Error("Method not implemented.");
+  }
+  getPublicKey(): Promise<PublicKey> {
+    throw new Error("Method not implemented.");
+  }
+  signData(_options: SignDataOptions): Promise<SignedData> {
     throw new Error("Method not implemented.");
   }
 }
