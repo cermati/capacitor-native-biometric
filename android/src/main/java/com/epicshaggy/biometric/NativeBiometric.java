@@ -278,7 +278,7 @@ public class NativeBiometric extends Plugin {
 
     @PluginMethod()
     public void deleteCredentials(final PluginCall call) {
-        String KEY_ALIAS = call.getString("server", null);
+        String KEY_ALIAS = call.getString("server", DEFAULT_KEY);
 
         if (KEY_ALIAS != null) {
             try {
