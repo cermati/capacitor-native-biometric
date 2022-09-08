@@ -262,8 +262,8 @@ public class NativeBiometric extends Plugin {
             signature.update(challangeData);
             byte[] signatureBytes = signature.sign();
 
-            signatureResult= new String(signatureBytes);
-            ret.put("signedData",signatureResult);
+            signatureResult = new String(signatureBytes);
+            ret.put("signedData", signatureResult);
             call.resolve(ret);
         } catch (UserNotAuthenticatedException e) {
             //Exception thrown when the user has not been authenticated
@@ -371,7 +371,7 @@ public class NativeBiometric extends Plugin {
 
         Key key = keystore.getKey(DEFAULT_KEY, null);
 
-        if (key instanceof PrivateKey && key != null) {
+        if (key != null && key instanceof PrivateKey) {
             // Get certificate of public key
             Certificate cert = keystore.getCertificate(DEFAULT_KEY);
 
