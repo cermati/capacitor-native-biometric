@@ -55,6 +55,10 @@ export interface DeleteCredentialOptions {
   server: string;
 }
 
+export interface SignDataOptions {
+  challengeString: string;
+}
+
 export interface NativeBiometricPlugin {
   isAvailable(options?: IsAvailableOptions): Promise<AvailableResult>;
 
@@ -67,4 +71,6 @@ export interface NativeBiometricPlugin {
   deleteCredentials(options: DeleteCredentialOptions): Promise<any>;
 
   getPublicKey(): Promise<any>;
+
+  signData(options?: SignDataOptions ) : Promise<any>
 }

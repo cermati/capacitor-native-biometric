@@ -9,7 +9,9 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyPermanentlyInvalidatedException;
 import android.security.keystore.KeyProperties;
+import android.security.keystore.UserNotAuthenticatedException;
 import android.util.Base64;
 
 import androidx.activity.result.ActivityResult;
@@ -26,6 +28,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -39,13 +42,12 @@ import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.Signature;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.Enumeration;
 import java.util.GregorianCalendar;
 
 import javax.crypto.Cipher;
@@ -237,6 +239,40 @@ public class NativeBiometric extends Plugin {
             }
         } else {
             call.reject("Something went wrong.");
+        }
+    }
+
+    @PluginMethod
+    private void signData(PluginCall call) throws CertificateException, KeyStoreException, NoSuchAlgorithmException, IOException {
+        String signatureResult = null;
+        JSObject ret = new JSObject();
+
+        //Get the Keystore instance
+        KeyStore keyStore = getKeyStore();
+
+        try {
+            //Retrieves the private key from the keystore
+            PrivateKey privateKey = (PrivateKey) keyStore.getKey(DEFAULT_KEY, null);
+            Charset charset = Charset.forName("UTF-8");
+            byte[] challangeData = call.getString("challengeString").getBytes(charset);
+
+            //Sign the data with the private key using RSA algorithm along SHA-256 digest algorithm
+            Signature signature = Signature.getInstance("SHA256withRSA");
+            signature.initSign(privateKey);
+            signature.update(challangeData);
+            byte[] signatureBytes = signature.sign();
+
+            signatureResult= new String(signatureBytes);
+            ret.put("signedData",signatureResult);
+            call.resolve(ret);
+        } catch (UserNotAuthenticatedException e) {
+            //Exception thrown when the user has not been authenticated
+            call.reject("User has not been authenticated");
+        } catch (KeyPermanentlyInvalidatedException e) {
+            //Exception thrown when the key has been invalidated for example when lock screen has been disabled.
+            call.reject("Process interrupted");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
