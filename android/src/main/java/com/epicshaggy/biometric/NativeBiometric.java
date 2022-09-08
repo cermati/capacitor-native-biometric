@@ -340,11 +340,8 @@ public class NativeBiometric extends Plugin {
 
 
     private KeyPair generateKeyPair() throws GeneralSecurityException {
-        //Create the start and expiry date for the key
-        // TODO: confirm the expiration date
+        //Create the start date for this key to be eligible
         GregorianCalendar startDate = new GregorianCalendar();
-        GregorianCalendar endDate = new GregorianCalendar();
-        endDate.add(Calendar.YEAR, 1);
 
         //Create RSA key pair and store it in Android Keystore
         KeyPairGenerator generator = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA, ANDROID_KEY_STORE);
@@ -357,7 +354,6 @@ public class NativeBiometric extends Plugin {
                         setDigests(KeyProperties.DIGEST_SHA256).                            //Set of digests algorithms with which the key can be used
                         setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1).    //Set of padding schemes with which the key can be used when signing/verifying
                         setCertificateNotBefore(startDate.getTime()).                       //Start of the validity period for the self-signed certificate of the generated, default Jan 1 1970
-                        setCertificateNotAfter(endDate.getTime()).                          //End of the validity period for the self-signed certificate of the generated key, default Jan 1 2048
                         setUserAuthenticationRequired(true).                                //Sets whether this key is authorized to be used only if the user has been authenticated, default false
                         setUserAuthenticationValidityDurationSeconds(30).                   //Duration(seconds) for which this key is authorized to be used after the user is successfully authenticated
                         build());
