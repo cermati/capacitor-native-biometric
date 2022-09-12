@@ -9,4 +9,6 @@ CAP_PLUGIN(NativeBiometric, "NativeBiometric",
            CAP_PLUGIN_METHOD(getCredentials, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(setCredentials, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(deleteCredentials, CAPPluginReturnPromise);
+           CAP_PLUGIN_METHOD(getPublicKey, CAPPluginReturnPromise);
+           CAP_PLUGIN_METHOD(signData, CAPPluginReturnPromise);
 )

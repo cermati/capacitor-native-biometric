@@ -202,18 +202,31 @@ public class NativeBiometric: CAPPlugin {
     
     @objc func getPublicKey(_ call: CAPPluginCall){
         var obj = JSObject()
+
+        print("masuk sini gan")
         
         do {
+            print("masuk sini juga gan")
             let publicKeyFromKeychain = try getPublicFromKeychain()
-            obj["publicKey"] = publicKeyFromKeychain
-            call.resolve(obj)
+            var error:Unmanaged<CFError>?
+            if let cfdata = SecKeyCopyExternalRepresentation(publicKeyFromKeychain, &error) {
+               let data:Data = cfdata as Data
+               let b64Key = data.base64EncodedString()
+                obj["publicKey"] = b64Key
+                call.resolve(obj)
+            }
         }catch {
             do{
                 let generatedPublicKey = try generatePublicKey()
                 try storePublicKeyToKeychain(generatedPublicKey)
                 
-                obj["publicKey"] = generatedPublicKey
-                call.resolve(obj)
+                var error:Unmanaged<CFError>?
+                if let cfdata = SecKeyCopyExternalRepresentation(generatedPublicKey, &error) {
+                   let data:Data = cfdata as Data
+                    let b64Key = data.base64EncodedString()
+                    obj["publicKey"] = b64Key
+                    call.resolve(obj)
+                }
             }catch{
                 call.reject("Cannot generate public key")
             }
