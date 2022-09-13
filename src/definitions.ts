@@ -22,6 +22,7 @@ export interface IsAvailableOptions {
 
 export interface AvailableResult {
   isAvailable: boolean;
+  isBiometryChanged: boolean;
   biometryType: BiometryType;
   errorCode?: number;
 }
