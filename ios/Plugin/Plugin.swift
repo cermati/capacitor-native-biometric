@@ -212,7 +212,7 @@ public class NativeBiometric: CAPPlugin {
                 obj["publicKey"] = b64Key
                 call.resolve(obj)
             }
-        }catch {
+        } catch {
             do{
                 let generatedPublicKey = try generatePublicKey()
                 try storePublicKeyToKeychain(generatedPublicKey)
@@ -304,8 +304,8 @@ public class NativeBiometric: CAPPlugin {
             kSecAttrKeySizeInBits as String: 2048,
             kSecPrivateKeyAttrs as String: [
                 kSecAttrIsPermanent as String: true,
+                kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked,
                 kSecAttrApplicationTag as String: privateKeyTag,
-                
             ]
         ]
         

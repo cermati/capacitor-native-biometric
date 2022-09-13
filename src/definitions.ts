@@ -80,5 +80,5 @@ export interface NativeBiometricPlugin {
 
   getPublicKey(): Promise<PublicKey>;
 
-  signData(options: SignDataOptions ) : Promise<SignedData>
+  signData(options: SignDataOptions) : Promise<SignedData>
 }
