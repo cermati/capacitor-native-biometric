@@ -260,7 +260,7 @@ public class NativeBiometric: CAPPlugin {
         do{
             guard let signData = SecKeyCreateSignature(
             privateKey,
-            SecKeyAlgorithm.ecdsaSignatureMessageX962SHA256,
+            SecKeyAlgorithm.rsaSignatureMessagePKCS1v15SHA256,
             messageData as CFData, nil) else {
                 call.reject("Cannot sign data")
                 return
