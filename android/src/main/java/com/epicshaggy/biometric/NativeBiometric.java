@@ -129,9 +129,9 @@ public class NativeBiometric extends Plugin {
         biometricManager = BiometricManager.from(getContext());
         int canAuthenticateResult = biometricManager.canAuthenticate();
 
-        Boolean isBiometryChange = cipherInit();
+        Boolean biometryNotChanged = cipherInit();
 
-        ret.put("isBiometryChanged", isBiometryChange);
+        ret.put("isBiometryChanged", !biometryNotChanged);
 
         switch (canAuthenticateResult) {
             case BiometricManager.BIOMETRIC_SUCCESS:
@@ -368,7 +368,7 @@ public class NativeBiometric extends Plugin {
                         setCertificateNotBefore(startDate.getTime()).                       //Start of the validity period for the self-signed certificate of the generated, default Jan 1 1970
                         setUserAuthenticationRequired(true).                                //Sets whether this key is authorized to be used only if the user has been authenticated, default false
                         setUserAuthenticationValidityDurationSeconds(30).                   //Duration(seconds) for which this key is authorized to be used after the user is successfully authenticated
-                        setInvalidatedByBiometricEnrollment(true).
+                        setInvalidatedByBiometricEnrollment(true).                          //Invalidate key when the biometry changes in user's device
                         build());
 
         return generator.genKeyPair();
@@ -499,7 +499,7 @@ public class NativeBiometric extends Plugin {
     }
 
     @TargetApi(Build.VERSION_CODES.M)
-    public boolean cipherInit() {
+    private boolean cipherInit() {
         try {
             cipher = Cipher.getInstance(KeyProperties.KEY_ALGORITHM_AES + "/" + KeyProperties.BLOCK_MODE_CBC + "/" + KeyProperties.ENCRYPTION_PADDING_PKCS7);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {

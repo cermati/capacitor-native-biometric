@@ -37,11 +37,12 @@ public class NativeBiometric: CAPPlugin {
         
         if LAContext.biometricsChanged() {
             obj["isBiometryChanged"] = true
+            
+            // Reset LAContext.savedBiometricsPolicyState to nil after doing so
+            LAContext.savedBiometricsPolicyState = nil
         }else {
             // Handle biometrics changed
             obj["isBiometryChanged"] = false
-            // Reset LAContext.savedBiometricsPolicyState to nil after doing so
-            LAContext.savedBiometricsPolicyState = nil
         }
 
         let useFallback = call.getBool("useFallback", false)
