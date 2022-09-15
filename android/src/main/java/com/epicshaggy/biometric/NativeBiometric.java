@@ -129,9 +129,9 @@ public class NativeBiometric extends Plugin {
         biometricManager = BiometricManager.from(getContext());
         int canAuthenticateResult = biometricManager.canAuthenticate();
 
-        Boolean biometryNotChanged = cipherInit();
+        Boolean biometryChanged = cipherInit();
 
-        ret.put("isBiometryChanged", !biometryNotChanged);
+        ret.put("isBiometryChanged", biometryChanged);
 
         switch (canAuthenticateResult) {
             case BiometricManager.BIOMETRIC_SUCCESS:
@@ -501,18 +501,26 @@ public class NativeBiometric extends Plugin {
     @TargetApi(Build.VERSION_CODES.M)
     private boolean cipherInit() {
         try {
-            cipher = Cipher.getInstance(KeyProperties.KEY_ALGORITHM_AES + "/" + KeyProperties.BLOCK_MODE_CBC + "/" + KeyProperties.ENCRYPTION_PADDING_PKCS7);
+            cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             throw new RuntimeException("Failed to get Cipher", e);
         }
 
         try {
-            keyStore.load(null);
-            SecretKey key = (SecretKey) keyStore.getKey(DEFAULT_KEY, null);
+            KeyStore keyStore = getKeyStore();
+
+            // If keystore return null, the store is not initialized yet
+            // That means the public key hasn't been generated yet
+            if (keyStore != null) {
+                return false;
+            }
+
+            Key key = keyStore.getKey(DEFAULT_KEY, null);
+
             cipher.init(Cipher.ENCRYPT_MODE, key);
-            return true;
-        } catch (KeyPermanentlyInvalidatedException e) {
             return false;
+        } catch (KeyPermanentlyInvalidatedException e) {
+            return true;
         } catch (KeyStoreException | CertificateException | UnrecoverableKeyException | IOException | NoSuchAlgorithmException | InvalidKeyException e) {
             throw new RuntimeException("Failed to init Cipher", e);
         }
