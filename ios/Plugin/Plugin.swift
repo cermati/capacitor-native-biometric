@@ -35,6 +35,16 @@ public class NativeBiometric: CAPPlugin {
         obj["isAvailable"] = false
         obj["biometryType"] = 0
         
+        if LAContext.biometricsChanged() {
+            obj["isBiometryChanged"] = true
+            
+            // Reset LAContext.savedBiometricsPolicyState to nil after doing so
+            LAContext.savedBiometricsPolicyState = nil
+        }else {
+            // Handle biometrics changed
+            obj["isBiometryChanged"] = false
+        }
+
         let useFallback = call.getBool("useFallback", false)
         let policy = useFallback ? LAPolicy.deviceOwnerAuthentication : LAPolicy.deviceOwnerAuthenticationWithBiometrics
         
@@ -384,5 +394,34 @@ public class NativeBiometric: CAPPlugin {
         
         let status = SecItemDelete(query as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else { throw KeychainError.unhandledError(status: status) }
+    }
+}
+
+extension LAContext {
+    static var savedBiometricsPolicyState: Data? {
+        get {
+            UserDefaults.standard.data(forKey: "BiometricsPolicyState")
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "BiometricsPolicyState")
+        }
+    }
+    
+    static func biometricsChanged() -> Bool {
+        let context = LAContext()
+        var error: NSError?
+        context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
+        
+        // If there is no saved policy state yet, save it
+        if error == nil && LAContext.savedBiometricsPolicyState == nil {
+            LAContext.savedBiometricsPolicyState = context.evaluatedPolicyDomainState
+            return false
+        }
+        
+        if let domainState = context.evaluatedPolicyDomainState, domainState != LAContext.savedBiometricsPolicyState {
+            return true
+        }
+        
+        return false
     }
 }

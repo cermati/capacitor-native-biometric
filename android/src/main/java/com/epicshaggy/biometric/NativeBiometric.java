@@ -1,5 +1,6 @@
 package com.epicshaggy.biometric;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.KeyguardManager;
 import android.content.Context;
@@ -15,6 +16,7 @@ import android.security.keystore.UserNotAuthenticatedException;
 import android.util.Base64;
 
 import androidx.activity.result.ActivityResult;
+import androidx.annotation.RequiresApi;
 import androidx.biometric.BiometricManager;
 
 import com.getcapacitor.JSObject;
@@ -44,6 +46,7 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.UnrecoverableEntryException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
@@ -55,6 +58,7 @@ import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.security.auth.x500.X500Principal;
@@ -74,6 +78,7 @@ public class NativeBiometric extends Plugin {
 
 
     private KeyStore keyStore;
+    private Cipher cipher;
     private static final String ANDROID_KEY_STORE = "AndroidKeyStore";
     private static final String DEFAULT_KEY = "DefaultKey";
     private static final String TRANSFORMATION = "AES/GCM/NoPadding";
@@ -82,6 +87,7 @@ public class NativeBiometric extends Plugin {
     private static final byte[] FIXED_IV = new byte[12];
     private static final String ENCRYPTED_KEY = "NativeBiometricKey";
     private static final String NATIVE_BIOMETRIC_SHARED_PREFERENCES = "NativeBiometricSharedPreferences";
+
 
     private SharedPreferences encryptedSharedPreferences;
 
@@ -122,6 +128,10 @@ public class NativeBiometric extends Plugin {
 
         biometricManager = BiometricManager.from(getContext());
         int canAuthenticateResult = biometricManager.canAuthenticate();
+
+        Boolean biometryChanged = cipherInit();
+
+        ret.put("isBiometryChanged", biometryChanged);
 
         switch (canAuthenticateResult) {
             case BiometricManager.BIOMETRIC_SUCCESS:
@@ -244,7 +254,7 @@ public class NativeBiometric extends Plugin {
 
     @PluginMethod
     private void signData(PluginCall call) throws CertificateException, KeyStoreException, NoSuchAlgorithmException, IOException {
-        String signatureResult = null;
+        String signatureResult;
         JSObject ret = new JSObject();
 
         //Get the Keystore instance
@@ -301,6 +311,7 @@ public class NativeBiometric extends Plugin {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     @PluginMethod()
     public void getPublicKey(final PluginCall call) throws GeneralSecurityException, IOException {
         JSObject ret = new JSObject();
@@ -339,6 +350,7 @@ public class NativeBiometric extends Plugin {
     }
 
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     private KeyPair generateKeyPair() throws GeneralSecurityException {
         //Create the start date for this key to be eligible
         GregorianCalendar startDate = new GregorianCalendar();
@@ -356,11 +368,13 @@ public class NativeBiometric extends Plugin {
                         setCertificateNotBefore(startDate.getTime()).                       //Start of the validity period for the self-signed certificate of the generated, default Jan 1 1970
                         setUserAuthenticationRequired(true).                                //Sets whether this key is authorized to be used only if the user has been authenticated, default false
                         setUserAuthenticationValidityDurationSeconds(30).                   //Duration(seconds) for which this key is authorized to be used after the user is successfully authenticated
+                        setInvalidatedByBiometricEnrollment(true).                          //Invalidate key when the biometry changes in user's device
                         build());
 
         return generator.genKeyPair();
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     private KeyPair getKeyPair() throws GeneralSecurityException, IOException {
         KeyPair keyPair = null;
         KeyStore keystore = getKeyStore();
@@ -409,13 +423,11 @@ public class NativeBiometric extends Plugin {
     }
 
     private KeyStore getKeyStore() throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException {
-        if (keyStore != null) {
-            return keyStore;
-        } else {
+        if (keyStore == null) {
             keyStore = KeyStore.getInstance(ANDROID_KEY_STORE);
             keyStore.load(null);
-            return keyStore;
         }
+        return keyStore;
     }
 
     private Key getAESKey(String KEY_ALIAS) throws CertificateException, NoSuchPaddingException, InvalidKeyException, NoSuchAlgorithmException, KeyStoreException, NoSuchProviderException, UnrecoverableEntryException, IOException, InvalidAlgorithmParameterException {
@@ -484,5 +496,33 @@ public class NativeBiometric extends Plugin {
             bytes[i] = values.get(i).byteValue();
         }
         return bytes;
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    private boolean cipherInit() {
+        try {
+            cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+            throw new RuntimeException("Failed to get Cipher", e);
+        }
+
+        try {
+            KeyStore keyStore = getKeyStore();
+
+            // If keystore return null, the store is not initialized yet
+            // That means the public key hasn't been generated yet
+            if (keyStore != null) {
+                return false;
+            }
+
+            Key key = keyStore.getKey(DEFAULT_KEY, null);
+
+            cipher.init(Cipher.ENCRYPT_MODE, key);
+            return false;
+        } catch (KeyPermanentlyInvalidatedException e) {
+            return true;
+        } catch (KeyStoreException | CertificateException | UnrecoverableKeyException | IOException | NoSuchAlgorithmException | InvalidKeyException e) {
+            throw new RuntimeException("Failed to init Cipher", e);
+        }
     }
 }
