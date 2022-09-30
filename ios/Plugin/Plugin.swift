@@ -220,7 +220,7 @@ public class NativeBiometric: CAPPlugin {
             var error:Unmanaged<CFError>?
             if let cfdata = SecKeyCopyExternalRepresentation(publicKeyFromKeychain, &error) {
                let data:Data = cfdata as Data
-               let b64Key = data.base64EncodedString()
+               let b64Key = data.base64EncodedString(options: .lineLength64Characters)
                 
                 obj["publicKey"] = convertToPemPublicKey(b64Key)
                 call.resolve(obj)
@@ -233,7 +233,7 @@ public class NativeBiometric: CAPPlugin {
                 var error:Unmanaged<CFError>?
                 if let cfdata = SecKeyCopyExternalRepresentation(generatedPublicKey, &error) {
                    let data:Data = cfdata as Data
-                    let b64Key = data.base64EncodedString()
+                    let b64Key = data.base64EncodedString(options: .lineLength64Characters)
                   
                     obj["publicKey"] = convertToPemPublicKey(b64Key)
                     call.resolve(obj)
@@ -245,9 +245,9 @@ public class NativeBiometric: CAPPlugin {
     }
     
     func convertToPemPublicKey(_ b64Key: String) -> String {
-        let head = "-----BEGIN PUBLIC KEY-----";
+        let head = "-----BEGIN RSA PUBLIC KEY-----";
         let body = b64Key
-        let tail = "-----END PUBLIC KEY-----";
+        let tail = "-----END RSA PUBLIC KEY-----";
         
         let pemPublicKey = """
             \(head)
