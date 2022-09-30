@@ -31,6 +31,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -178,6 +179,31 @@ public class NativeBiometric extends Plugin {
         startActivityForResult(call, intent, "verifyResult");
     }
 
+    @ActivityCallback
+    private void verifyResult(PluginCall call, ActivityResult result) {
+        JSObject ret = new JSObject();
+
+        if (result.getResultCode() == Activity.RESULT_OK) {
+            Intent data = result.getData();
+            if (data.hasExtra("result")) {
+                switch (data.getStringExtra("result")) {
+                    case "success":
+                        ret.put("isVerified", true);
+                        call.resolve(ret);
+                        break;
+                    case "failed":
+                        call.reject(data.getStringExtra("errorDetails"), data.getStringExtra("errorCode"));
+                        break;
+                    default:
+                        call.reject("Verification error: " + data.getStringExtra("result"), data.getStringExtra("errorCode"));
+                        break;
+                }
+            }
+        } else {
+            call.reject("Something went wrong.");
+        }
+    }
+
     @PluginMethod()
     public void setCredentials(final PluginCall call) {
         String username = call.getString("username", null);
@@ -230,28 +256,6 @@ public class NativeBiometric extends Plugin {
         }
     }
 
-    @ActivityCallback
-    private void verifyResult(PluginCall call, ActivityResult result) {
-        if (result.getResultCode() == Activity.RESULT_OK) {
-            Intent data = result.getData();
-            if (data.hasExtra("result")) {
-                switch (data.getStringExtra("result")) {
-                    case "success":
-                        call.resolve();
-                        break;
-                    case "failed":
-                        call.reject(data.getStringExtra("errorDetails"), data.getStringExtra("errorCode"));
-                        break;
-                    default:
-                        call.reject("Verification error: " + data.getStringExtra("result"));
-                        break;
-                }
-            }
-        } else {
-            call.reject("Something went wrong.");
-        }
-    }
-
     @PluginMethod
     private void signData(PluginCall call) throws CertificateException, KeyStoreException, NoSuchAlgorithmException, IOException {
         String signatureResult;
@@ -263,7 +267,7 @@ public class NativeBiometric extends Plugin {
         try {
             //Retrieves the private key from the keystore
             PrivateKey privateKey = (PrivateKey) keyStore.getKey(DEFAULT_KEY, null);
-            Charset charset = Charset.forName("UTF-8");
+            Charset charset = StandardCharsets.UTF_8;
             byte[] challangeData = call.getString("challengeString").getBytes(charset);
 
             //Sign the data with the private key using RSA algorithm along SHA-256 digest algorithm
@@ -272,7 +276,7 @@ public class NativeBiometric extends Plugin {
             signature.update(challangeData);
             byte[] signatureBytes = signature.sign();
 
-            signatureResult = new String(signatureBytes);
+            signatureResult = Base64.encodeToString(signatureBytes, Base64.DEFAULT);
             ret.put("signedData", signatureResult);
             call.resolve(ret);
         } catch (UserNotAuthenticatedException e) {
@@ -317,7 +321,17 @@ public class NativeBiometric extends Plugin {
         JSObject ret = new JSObject();
         KeyPair keyPair = getKeyPair();
         PublicKey publicKey = keyPair.getPublic();
-        ret.put("publicKey", new String(Base64.encode(publicKey.getEncoded(), Base64.DEFAULT)));
+
+        String head = "-----BEGIN PUBLIC KEY-----\n";
+        String body = new String(Base64.encode(publicKey.getEncoded(), Base64.DEFAULT));
+        String tail = "-----END PUBLIC KEY-----\n";
+
+        String pemPublicKey = head + body + tail;
+
+        byte[] data = pemPublicKey.getBytes(StandardCharsets.UTF_8);
+        String encodedPemPublicKey = Base64.encodeToString(data, Base64.DEFAULT);
+
+        ret.put("publicKey", encodedPemPublicKey);
         call.resolve(ret);
     }
 
@@ -330,7 +344,7 @@ public class NativeBiometric extends Plugin {
             cipher = Cipher.getInstance(AES_MODE, "BC");
             cipher.init(Cipher.ENCRYPT_MODE, getKey(KEY_ALIAS));
         }
-        byte[] encodedBytes = cipher.doFinal(stringToEncrypt.getBytes("UTF-8"));
+        byte[] encodedBytes = cipher.doFinal(stringToEncrypt.getBytes(StandardCharsets.UTF_8));
         return Base64.encodeToString(encodedBytes, Base64.DEFAULT);
     }
 
@@ -346,7 +360,7 @@ public class NativeBiometric extends Plugin {
             cipher.init(Cipher.DECRYPT_MODE, getKey(KEY_ALIAS));
         }
         byte[] decryptedData = cipher.doFinal(encryptedData);
-        return new String(decryptedData, "UTF-8");
+        return new String(decryptedData, StandardCharsets.UTF_8);
     }
 
 

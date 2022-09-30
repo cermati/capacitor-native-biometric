@@ -27,7 +27,14 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="98a631a0-f275-4c4a-9bb3-2f979ba85ba5" name="Default Changelist" comment="" />
+    <list default="true" id="98a631a0-f275-4c4a-9bb3-2f979ba85ba5" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/epicshaggy/biometric/AuthActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/epicshaggy/biometric/AuthActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/epicshaggy/biometric/NativeBiometric.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/epicshaggy/biometric/NativeBiometric.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../ios/Plugin.xcworkspace/xcuserdata/ravedyaaufaamarangganawidiyanto.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" afterPath="$PROJECT_DIR$/../ios/Plugin.xcworkspace/xcuserdata/ravedyaaufaamarangganawidiyanto.xcuserdatad/UserInterfaceState.xcuserstate" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../ios/Plugin/Plugin.swift" beforeDir="false" afterPath="$PROJECT_DIR$/../ios/Plugin/Plugin.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../ios/Pods/Pods.xcodeproj/xcuserdata/ravedyaaufaamarangganawidiyanto.xcuserdatad/xcschemes/xcschememanagement.plist" beforeDir="false" afterPath="$PROJECT_DIR$/../ios/Pods/Pods.xcodeproj/xcuserdata/ravedyaaufaamarangganawidiyanto.xcuserdatad/xcschemes/xcschememanagement.plist" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -55,9 +62,6 @@
       <filtered-out-file-type name="TAG" />
       <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
     </file-type-list>
-  </component>
-  <component name="ProblemsViewState">
-    <option name="selectedIndex" value="1" />
   </component>
   <component name="ProjectId" id="1aSxDtR19IA1eoq3lkGA6ZDf4zL" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
