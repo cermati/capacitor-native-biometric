@@ -66,7 +66,6 @@ public class AuthActivity extends AppCompatActivity {
             @Override
             public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
                 super.onAuthenticationError(errorCode, errString);
-
                 finishActivity(errString.toString(), errorCode);
             }
 
@@ -81,20 +80,12 @@ public class AuthActivity extends AppCompatActivity {
                 super.onAuthenticationFailed();
                 counter++;
                 if(counter == maxAttempts)
-                    finishActivity("failed");
+                    finishActivity("failed", 0);
             }
         });
 
         biometricPrompt.authenticate(promptInfo);
 
-    }
-
-    void finishActivity(String result) {
-        Intent intent = new Intent();
-        intent.putExtra("result", "failed");
-        intent.putExtra("errorDetails", "Authentication failed.");
-        setResult(RESULT_OK, intent);
-        finish();
     }
 
     void finishActivity(String result, int errorCode) {

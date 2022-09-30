@@ -88,7 +88,8 @@ public class NativeBiometric: CAPPlugin {
     @objc func verifyIdentity(_ call: CAPPluginCall){
         let context = LAContext()
         var canEvaluateError: NSError?
-        
+        var obj = JSObject()
+
         let useFallback = call.getBool("useFallback", false)
         let policy = useFallback ? LAPolicy.deviceOwnerAuthentication : LAPolicy.deviceOwnerAuthenticationWithBiometrics
         
@@ -99,7 +100,8 @@ public class NativeBiometric: CAPPlugin {
             context.evaluatePolicy(policy, localizedReason: reason) { (success, evaluateError) in
                 
                 if success {
-                    call.resolve()
+                    obj["isVerified"] = true
+                    call.resolve(obj)
                 }else{
                     var errorCode = "0"
                     guard let error = evaluateError
@@ -218,8 +220,9 @@ public class NativeBiometric: CAPPlugin {
             var error:Unmanaged<CFError>?
             if let cfdata = SecKeyCopyExternalRepresentation(publicKeyFromKeychain, &error) {
                let data:Data = cfdata as Data
-               let b64Key = data.base64EncodedString()
-                obj["publicKey"] = b64Key
+               let b64Key = data.base64EncodedString(options: .lineLength64Characters)
+                
+                obj["publicKey"] = convertToPemPublicKey(b64Key)
                 call.resolve(obj)
             }
         } catch {
@@ -230,14 +233,29 @@ public class NativeBiometric: CAPPlugin {
                 var error:Unmanaged<CFError>?
                 if let cfdata = SecKeyCopyExternalRepresentation(generatedPublicKey, &error) {
                    let data:Data = cfdata as Data
-                    let b64Key = data.base64EncodedString()
-                    obj["publicKey"] = b64Key
+                    let b64Key = data.base64EncodedString(options: .lineLength64Characters)
+                  
+                    obj["publicKey"] = convertToPemPublicKey(b64Key)
                     call.resolve(obj)
                 }
             }catch{
                 call.reject("Cannot generate public key")
             }
         }
+    }
+    
+    func convertToPemPublicKey(_ b64Key: String) -> String {
+        let head = "-----BEGIN RSA PUBLIC KEY-----";
+        let body = b64Key
+        let tail = "-----END RSA PUBLIC KEY-----";
+        
+        let pemPublicKey = """
+            \(head)
+            \(body)
+            \(tail)
+            """;
+        
+        return pemPublicKey.toBase64();
     }
     
     @objc func signData(_ call: CAPPluginCall){
@@ -424,4 +442,20 @@ extension LAContext {
         
         return false
     }
+}
+
+extension String {
+
+    func fromBase64() -> String? {
+        guard let data = Data(base64Encoded: self) else {
+            return nil
+        }
+
+        return String(data: data, encoding: .utf8)
+    }
+
+    func toBase64() -> String {
+        return Data(self.utf8).base64EncodedString()
+    }
+
 }

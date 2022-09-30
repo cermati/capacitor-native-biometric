@@ -18,16 +18,16 @@ async performBiometricVerificatin(){
 
   const isFaceID = result.biometryType == BiometryType.FACE_ID;
 
-  const verified = await NativeBiometric.verifyIdentity({
+  const { isVerified } = await NativeBiometric.verifyIdentity({
     reason: "For easy log in",
     title: "Log in",
     subtitle: "Maybe add subtitle here?",
     description: "Maybe a description too?",
   })
-    .then(() => true)
-    .catch(() => false);
 
-  if(!verified) return;
+  if(isVerified){
+    // do something
+  }
 
   const credentials = await NativeBiometric.getCredentials({
     server: "www.example.com",
@@ -56,6 +56,8 @@ NativeBiometric.deleteCredentials({
 | `setCredentials(options: SetCredentialOptions)`       |         | `Promise<any>`             | Securely stores user's credentials in Keychain (iOS) or encypts them using Keystore (Android) |
 | `getCredentials(options: GetCredentialOptions)`       |         | `Promise<Credentials>`     | Retrieves user's credentials if any                                                           |
 | `deleteCredentials(options: DeleteCredentialOptions)` |         | `Promise<any>`             | Removes user's credentials if any                                                             |
+| `getPublicKey()` |         | `Promise<PublicKey>`             | Removes user's credentials if any                                                             |
+| `signData(options: SignDataOptions)` |         | `Promise<SignedData>`             | Removes user's credentials if any                                                             |
 
 ## Interfaces
 
