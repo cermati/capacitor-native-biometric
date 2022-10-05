@@ -199,10 +199,7 @@ public class NativeBiometric: CAPPlugin {
     }
     
     @objc func deleteCredentials(_ call: CAPPluginCall){
-        guard let server = call.getString("server") else {
-            call.reject("No server name was provided")
-            return
-        }
+        let server = call.getString("server", publicKeyTag)
         
         do {
             try deleteCredentialsFromKeychain(server)
@@ -406,7 +403,7 @@ public class NativeBiometric: CAPPlugin {
     }
     
     // Delete user Credentials from Keychain
-    func deleteCredentialsFromKeychain(_ server: String = "CermatiPublicKey" )throws{
+    func deleteCredentialsFromKeychain(_ server: String)throws{
         let query: [String: Any] = [kSecClass as String: kSecClassInternetPassword,
                                     kSecAttrServer as String: server]
         
