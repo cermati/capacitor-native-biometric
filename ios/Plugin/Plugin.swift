@@ -403,7 +403,7 @@ public class NativeBiometric: CAPPlugin {
     }
     
     // Delete user Credentials from Keychain
-    func deleteCredentialsFromKeychain(_ server: String = "CermatiPublicKey" )throws{
+    func deleteCredentialsFromKeychain(_ server: String)throws{
         let query: [String: Any] = [kSecClass as String: kSecClassInternetPassword,
                                     kSecAttrServer as String: server]
         
