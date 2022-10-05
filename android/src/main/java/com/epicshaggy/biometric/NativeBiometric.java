@@ -257,7 +257,7 @@ public class NativeBiometric extends Plugin {
     }
 
     @PluginMethod
-    private void signData(PluginCall call) throws CertificateException, KeyStoreException, NoSuchAlgorithmException, IOException {
+    public void signData(PluginCall call) throws CertificateException, KeyStoreException, NoSuchAlgorithmException, IOException {
         String signatureResult;
         JSObject ret = new JSObject();
 
