@@ -199,10 +199,7 @@ public class NativeBiometric: CAPPlugin {
     }
     
     @objc func deleteCredentials(_ call: CAPPluginCall){
-        guard let server = call.getString("server") else {
-            call.reject("No server name was provided")
-            return
-        }
+        let server = call.getString("server", publicKeyTag)
         
         do {
             try deleteCredentialsFromKeychain(server)
