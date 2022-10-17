@@ -142,13 +142,13 @@ public class NativeBiometric extends Plugin {
 
             switch (canAuthenticateResult) {
                 case BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE:
-                    ret.put("error", "BIOMETRIC_ERROR_NO_HARDWARE");
+                    ret.put("errorCode", 1);
                     break;
                 case BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE:
-                    ret.put("error", "BIOMETRIC_ERROR_HW_UNAVAILABLE");
+                    ret.put("error", 2);
                     break;
                 case BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED:
-                    ret.put("error", "BIOMETRIC_ERROR_NONE_ENROLLED");
+                    ret.put("errorCode", 3);
                     break;
             }
         }
