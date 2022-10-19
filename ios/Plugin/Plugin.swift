@@ -90,6 +90,10 @@ public class NativeBiometric: CAPPlugin {
         var obj = JSObject()
         
         let useFallback = call.getBool("useFallback", false)
+        
+        context.localizedFallbackTitle = ""
+        context.localizedCancelTitle = "Use PIN"
+        
         let policy = useFallback ? LAPolicy.deviceOwnerAuthentication : LAPolicy.deviceOwnerAuthenticationWithBiometrics
         
         if context.canEvaluatePolicy(policy, error: &canEvaluateError){

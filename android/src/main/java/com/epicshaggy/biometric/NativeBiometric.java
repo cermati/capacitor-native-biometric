@@ -48,7 +48,6 @@ import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.UnrecoverableEntryException;
 import java.security.UnrecoverableKeyException;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.GregorianCalendar;

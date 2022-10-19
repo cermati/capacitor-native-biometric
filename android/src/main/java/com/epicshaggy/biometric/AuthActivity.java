@@ -4,17 +4,12 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
+import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 
 import android.os.Handler;
-import android.util.Log;
-import android.view.View;
 
 import com.epicshaggy.biometric.capacitornativebiometric.R;
 
@@ -53,7 +48,7 @@ public class AuthActivity extends AppCompatActivity {
 
         if(useFallback)
         {
-            builder.setDeviceCredentialAllowed(true);
+            builder.setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG);
         }
         else
         {

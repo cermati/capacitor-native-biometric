@@ -68,6 +68,14 @@ export interface SignedData {
   signedData: string;
 }
 
+export interface KeyExist {
+  keyExist: boolean;
+}
+
+export interface KeysDeleted {
+  keysDeleted: boolean;
+}
+
 export interface NativeBiometricPlugin {
   isAvailable(options?: IsAvailableOptions): Promise<AvailableResult>;
 
@@ -82,4 +90,8 @@ export interface NativeBiometricPlugin {
   getPublicKey(): Promise<PublicKey>;
 
   signData(options: SignDataOptions) : Promise<SignedData>
+
+  biometricKeyExist(): Promise<KeyExist>;
+
+  deleteKeyPair(): Promise<KeysDeleted>;
 }
