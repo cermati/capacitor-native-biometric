@@ -22,8 +22,7 @@ public class NativeBiometric: CAPPlugin {
         case unhandledError(status: OSStatus)
     }
     
-    let publicKeyTag = "CermatiPublicKey"
-    let privateKeyTag = "CermatiPrivateKey"
+    let BIOMETRIC_KEY = "CermatiBiometricKey"
     
     typealias JSObject = [String:Any]
     
@@ -44,7 +43,7 @@ public class NativeBiometric: CAPPlugin {
             // Handle biometrics changed
             obj["isBiometryChanged"] = false
         }
-
+        
         let useFallback = call.getBool("useFallback", false)
         let policy = useFallback ? LAPolicy.deviceOwnerAuthentication : LAPolicy.deviceOwnerAuthenticationWithBiometrics
         
@@ -89,7 +88,7 @@ public class NativeBiometric: CAPPlugin {
         let context = LAContext()
         var canEvaluateError: NSError?
         var obj = JSObject()
-
+        
         let useFallback = call.getBool("useFallback", false)
         let policy = useFallback ? LAPolicy.deviceOwnerAuthentication : LAPolicy.deviceOwnerAuthenticationWithBiometrics
         
@@ -199,7 +198,10 @@ public class NativeBiometric: CAPPlugin {
     }
     
     @objc func deleteCredentials(_ call: CAPPluginCall){
-        let server = call.getString("server", publicKeyTag)
+        guard let server = call.getString("server") else {
+            call.reject("No server name was provided")
+            return
+        }
         
         do {
             try deleteCredentialsFromKeychain(server)
@@ -212,32 +214,19 @@ public class NativeBiometric: CAPPlugin {
     @objc func getPublicKey(_ call: CAPPluginCall){
         var obj = JSObject()
         
-        do {
-            let publicKeyFromKeychain = try getPublicFromKeychain()
+        do{
+            let generatedPublicKey = try generatePublicKey()
+            
             var error:Unmanaged<CFError>?
-            if let cfdata = SecKeyCopyExternalRepresentation(publicKeyFromKeychain, &error) {
-               let data:Data = cfdata as Data
-               let b64Key = data.base64EncodedString(options: .lineLength64Characters)
+            if let cfdata = SecKeyCopyExternalRepresentation(generatedPublicKey, &error) {
+                let data:Data = cfdata as Data
+                let b64Key = data.base64EncodedString(options: .lineLength64Characters)
                 
                 obj["publicKey"] = convertToPemPublicKey(b64Key)
                 call.resolve(obj)
             }
-        } catch {
-            do{
-                let generatedPublicKey = try generatePublicKey()
-                try storePublicKeyToKeychain(generatedPublicKey)
-                
-                var error:Unmanaged<CFError>?
-                if let cfdata = SecKeyCopyExternalRepresentation(generatedPublicKey, &error) {
-                   let data:Data = cfdata as Data
-                    let b64Key = data.base64EncodedString(options: .lineLength64Characters)
-                  
-                    obj["publicKey"] = convertToPemPublicKey(b64Key)
-                    call.resolve(obj)
-                }
-            }catch{
-                call.reject("Cannot generate public key")
-            }
+        }catch{
+            call.reject("Cannot generate public key")
         }
     }
     
@@ -263,7 +252,7 @@ public class NativeBiometric: CAPPlugin {
             kSecAttrKeyClass as String: kSecAttrKeyClassPrivate,
             kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
             kSecAttrKeySizeInBits as String: 2048,
-            kSecAttrApplicationTag as String: privateKeyTag,
+            kSecAttrApplicationTag as String: BIOMETRIC_KEY,
             kSecReturnRef as String: true
         ]
         
@@ -284,9 +273,9 @@ public class NativeBiometric: CAPPlugin {
         
         do{
             guard let signData = SecKeyCreateSignature(
-            privateKey,
-            SecKeyAlgorithm.rsaSignatureMessagePKCS1v15SHA256,
-            messageData as CFData, nil) else {
+                privateKey,
+                SecKeyAlgorithm.rsaSignatureMessagePKCS1v15SHA256,
+                messageData as CFData, nil) else {
                 call.reject("Cannot sign data")
                 return
             }
@@ -298,28 +287,32 @@ public class NativeBiometric: CAPPlugin {
         }
     }
     
-    func storePublicKeyToKeychain(_ key: SecKey) throws {
-        let tag = publicKeyTag.data(using: .utf8)!
-        let addquery: [String: Any] = [kSecClass as String: kSecClassKey,
-                                       kSecAttrApplicationTag as String: tag,
-                                       kSecValueRef as String: key]
+    @objc func biometricKeysExist(_ call: CAPPluginCall){
+        var obj = JSObject()
+        let isBiometricKeyExist = doesBiometricKeyExist()
         
-        let status = SecItemAdd(addquery as CFDictionary, nil)
-        guard status == errSecSuccess else { return }
+        obj["keyExist"] = isBiometricKeyExist
+        
+        call.resolve(obj)
     }
     
-    func getPublicFromKeychain() throws -> SecKey {
-        let getquery: [String: Any] = [kSecClass as String: kSecClassKey,
-                                       kSecAttrApplicationTag as String: publicKeyTag,
-                                       kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
-                                       kSecReturnRef as String: true]
+    @objc func deleteKeyPair(_ call: CAPPluginCall) {
+        var obj = JSObject()
+        let isBiometricKeyExist = doesBiometricKeyExist()
         
-        var item: CFTypeRef?
-        let status = SecItemCopyMatching(getquery as CFDictionary, &item)
-        guard status == errSecSuccess else { throw KeychainError.noPassword}
-        let key = item as! SecKey
+        if(isBiometricKeyExist){
+            do{
+                try deleteBiometricKey()
+                
+                obj["keysDeleted"] = true;
+            }catch{
+                call.reject("Error deleting biometric key from keystore");
+            }
+        }else{
+            obj["keysDeleted"] = false;
+        }
         
-        return key
+        call.resolve()
     }
     
     func generatePublicKey() throws -> SecKey {
@@ -330,7 +323,7 @@ public class NativeBiometric: CAPPlugin {
             kSecPrivateKeyAttrs as String: [
                 kSecAttrIsPermanent as String: true,
                 kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked,
-                kSecAttrApplicationTag as String: privateKeyTag,
+                kSecAttrApplicationTag as String: BIOMETRIC_KEY,
             ]
         ]
         
@@ -344,6 +337,31 @@ public class NativeBiometric: CAPPlugin {
         let publicKey = SecKeyCopyPublicKey(privateKey)!
         
         return publicKey
+    }
+    
+    func deleteBiometricKey() throws {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassKey,
+            kSecAttrApplicationTag as String : BIOMETRIC_KEY,
+            kSecAttrKeyType as String: kSecAttrKeyTypeRSA
+        ]
+        
+        let status = SecItemDelete(query as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else { throw KeychainError.unhandledError(status: status) }
+    }
+    
+    func doesBiometricKeyExist() -> Bool {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassKey,
+            kSecAttrApplicationTag as String: BIOMETRIC_KEY,
+            kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
+            kSecUseAuthenticationUI as String: kSecUseAuthenticationUIFail
+        ]
+        
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        
+        return status == errSecSuccess || status == errSecInteractionNotAllowed
     }
     
     
@@ -442,17 +460,17 @@ extension LAContext {
 }
 
 extension String {
-
+    
     func fromBase64() -> String? {
         guard let data = Data(base64Encoded: self) else {
             return nil
         }
-
+        
         return String(data: data, encoding: .utf8)
     }
-
+    
     func toBase64() -> String {
         return Data(self.utf8).base64EncodedString()
     }
-
+    
 }
