@@ -7,6 +7,11 @@
             android:name="com.epicshaggy.biometric.AuthActivity"
             android:label="@string/title_activity_auth_activity"
             android:theme="@style/AppTheme.Transparent"></activity>
+
+        <activity
+            android:name="com.epicshaggy.biometric.AuthSignActivity"
+            android:label="@string/title_activity_sign_auth_activity"
+            android:theme="@style/AppTheme.Transparent"></activity>
     </application>
 
 </manifest>

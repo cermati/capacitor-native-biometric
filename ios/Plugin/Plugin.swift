@@ -218,6 +218,17 @@ public class NativeBiometric: CAPPlugin {
     @objc func getPublicKey(_ call: CAPPluginCall){
         var obj = JSObject()
         
+        let isBiometricKeyExist = doesBiometricKeyExist()
+        if(isBiometricKeyExist){
+            do{
+                try deleteBiometricKey()
+                
+                obj["keysDeleted"] = true;
+            }catch{
+                call.reject("Error deleting biometric key from keystore");
+            }
+        }
+        
         do{
             let generatedPublicKey = try generatePublicKey()
             

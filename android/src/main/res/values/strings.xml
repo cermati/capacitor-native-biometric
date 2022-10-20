@@ -1,6 +1,7 @@
 <resources>
     <string name="my_string">Just a simple string</string>
     <string name="title_activity_auth_activity">AuthActivity</string>
+    <string name="title_activity_sign_auth_activity">SignAuthActivity</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
     <string name="second_fragment_label">Second Fragment</string>

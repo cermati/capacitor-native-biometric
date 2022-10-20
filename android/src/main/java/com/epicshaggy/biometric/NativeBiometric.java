@@ -1,5 +1,7 @@
 package com.epicshaggy.biometric;
 
+import static androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG;
+
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.KeyguardManager;
@@ -12,7 +14,6 @@ import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyPermanentlyInvalidatedException;
 import android.security.keystore.KeyProperties;
-import android.security.keystore.UserNotAuthenticatedException;
 import android.util.Base64;
 
 import androidx.activity.result.ActivityResult;
@@ -30,7 +31,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
@@ -42,10 +42,8 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.Signature;
 import java.security.UnrecoverableEntryException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
@@ -125,7 +123,7 @@ public class NativeBiometric extends Plugin {
         JSObject ret = new JSObject();
 
         biometricManager = BiometricManager.from(getContext());
-        int canAuthenticateResult = biometricManager.canAuthenticate();
+        int canAuthenticateResult = biometricManager.canAuthenticate(BIOMETRIC_STRONG);
 
         Boolean biometryChanged = cipherInit();
 
@@ -262,37 +260,43 @@ public class NativeBiometric extends Plugin {
     }
 
     @PluginMethod
-    public void signData(PluginCall call) throws
-            CertificateException, KeyStoreException, NoSuchAlgorithmException, IOException {
-        String signatureResult;
+    public void signData(final PluginCall call)  {
+        Intent intent = new Intent(getContext(), AuthSignActivity.class);
+
+        intent.putExtra("challengeString", call.getString("challengeString"));
+        intent.putExtra("title", "Authenticate");
+
+        bridge.saveCall(call);
+        startActivityForResult(call, intent, "verifySignResult");
+    }
+
+    @ActivityCallback
+    private void verifySignResult(PluginCall call, ActivityResult result) {
         JSObject ret = new JSObject();
 
-        //Get the Keystore instance
-        KeyStore keyStore = getKeyStore();
-
-        try {
-            //Retrieves the private key from the keystore
-            PrivateKey privateKey = (PrivateKey) keyStore.getKey(DEFAULT_KEY, null);
-            Charset charset = StandardCharsets.UTF_8;
-            byte[] challangeData = call.getString("challengeString").getBytes(charset);
-
-            //Sign the data with the private key using RSA algorithm along SHA-256 digest algorithm
-            Signature signature = Signature.getInstance("SHA256withRSA");
-            signature.initSign(privateKey);
-            signature.update(challangeData);
-            byte[] signatureBytes = signature.sign();
-
-            signatureResult = Base64.encodeToString(signatureBytes, Base64.DEFAULT);
-            ret.put("signedData", signatureResult);
-            call.resolve(ret);
-        } catch (UserNotAuthenticatedException e) {
-            //Exception thrown when the user has not been authenticated
-            call.reject("User has not been authenticated");
-        } catch (KeyPermanentlyInvalidatedException e) {
-            //Exception thrown when the key has been invalidated for example when lock screen has been disabled.
-            call.reject("Process interrupted");
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        if (result.getResultCode() == Activity.RESULT_OK) {
+            Intent data = result.getData();
+            if (data.hasExtra("result")) {
+                switch (data.getStringExtra("result")) {
+                    case "success":
+                        ret.put("signedData", data.getStringExtra("signedData"));
+                        call.resolve(ret);
+                        break;
+                    case "authenticationError":
+                        call.reject(data.getStringExtra("errorDetails"), data.getStringExtra("errorCode"));
+                        break;
+                    case "biometryChanged":
+                        call.reject(data.getStringExtra("errorDetails"), data.getStringExtra("errorCode"));
+                    case "failed":
+                        call.reject(data.getStringExtra("errorDetails"), data.getStringExtra("errorCode"));
+                        break;
+                    default:
+                        call.reject("Undefined error");
+                        break;
+                }
+            }
+        } else {
+            call.reject("Something went wrong.");
         }
     }
 
@@ -326,6 +330,11 @@ public class NativeBiometric extends Plugin {
     public void getPublicKey(final PluginCall call) throws
             GeneralSecurityException, IOException {
         JSObject ret = new JSObject();
+
+        if(doesBiometricKeyExist()) {
+            deleteBiometricKey();
+        }
+
         KeyPair keyPair = getKeyPair();
         PublicKey publicKey = keyPair.getPublic();
 
