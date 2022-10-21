@@ -11,7 +11,7 @@ Use biometrics confirm device owner presence or authenticate users. A couple of 
 ```ts
 import { NativeBiometric } from "capacitor-native-biometric";
 
-async performBiometricVerificatin(){
+async performBiometricVerification(){
   const result = await NativeBiometric.isAvailable();
 
   if(!result.isAvailable) return;
@@ -56,8 +56,10 @@ NativeBiometric.deleteCredentials({
 | `setCredentials(options: SetCredentialOptions)`       |         | `Promise<any>`             | Securely stores user's credentials in Keychain (iOS) or encypts them using Keystore (Android) |
 | `getCredentials(options: GetCredentialOptions)`       |         | `Promise<Credentials>`     | Retrieves user's credentials if any                                                           |
 | `deleteCredentials(options: DeleteCredentialOptions)` |         | `Promise<any>`             | Removes user's credentials if any                                                             |
-| `getPublicKey()` |         | `Promise<PublicKey>`             | Removes user's credentials if any                                                             |
-| `signData(options: SignDataOptions)` |         | `Promise<SignedData>`             | Removes user's credentials if any                                                             |
+| `getPublicKey()`                                      |         | `Promise<PublicKey>`       | Create key pair and return public key, this only should be used once in enrollment            |
+| `signData(options: SignDataOptions)`                  |         | `Promise<SignedData>`      | Sign challenge data and return a signed string                                                |
+| `biometricKeyExist(): Promise<KeyExist>`              |         | `Promise<KeyExist>`        | Check if the biometric keypair exist                                                          |
+| `deleteKeyPair(): Promise<KeysDeleted>`               |         | `Promise<KeysDeleted>`     | Delete the biometric keypair                                                                  |
 
 ## Interfaces
 
@@ -101,18 +103,36 @@ NativeBiometric.deleteCredentials({
 
 ### VerifyIdentityErrors
 
-| code | Description                     |
-| ---- | ------------------------------- |
-| "0"  | Biometrics error or unavailable |
-| "10" | authenticationFailed            |
-| "11" | appCancel                       |
-| "12" | invalidContext                  |
-| "13" | notInteractive                  |
-| "14" | passcodeNotSet                  |
-| "15" | systemCancel                    |
-| "16" | userCancel                      |
-| "17" | userFallback                    |
-
+### Android
+| Name                          |Code |
+| ----------------------------- |-----|
+|ERROR_HW_UNAVAILABLE           | "1" |
+|ERROR_UNABLE_TO_PROCESS        | "2" |
+|ERROR_TIMEOUT                  | "3" |
+|ERROR_NO_SPACE                 | "4" |
+|ERROR_CANCELED                 | "5" |
+|ERROR_LOCKOUT                  | "7" |
+|ERROR_VENDOR                   | "8" |
+|ERROR_LOCKOUT_PERMANENT        | "9" |
+|ERROR_USER_CANCELED            | "10"|
+|ERROR_NO_BIOMETRICS            | "11"|
+|ERROR_HW_NOT_PRESENT           | "12"|
+|ERROR_NEGATIVE_BUTTON          | "13"|
+|ERROR_NO_DEVICE_CREDENTIAL     | "14"|
+|ERROR_SECURITY_UPDATE_REQUIRED | "15"|
+#### iOS
+| Description                     |Code |
+| ------------------------------- |-----|
+| Biometrics error or unavailable |"0"  |
+| authenticationFailed            |"10" |
+| appCancel                       |"11" |
+| invalidContext                  |"12" |
+| notInteractive                  |"13" |
+| passcodeNotSet                  |"14" |
+| systemCancel                    |"15" |
+| userCancel                      |"16" |
+| userFallback                    |"17" |
+   
 ### SetCredentialOptions
 
 | Properties | Default | Type     | Description                                                                                                                                                             |
