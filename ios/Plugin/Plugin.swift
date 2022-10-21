@@ -100,57 +100,20 @@ public class NativeBiometric: CAPPlugin {
             
             let reason = call.getString("reason") ?? "For biometric authentication"
             
-            context.evaluatePolicy(policy, localizedReason: reason) { (success, evaluateError) in
+            context.evaluatePolicy(policy, localizedReason: reason) { [self] (success, evaluateError) in
                 
                 if success {
                     obj["isVerified"] = true
                     call.resolve(obj)
                 }else{
-                    var errorCode = "0"
                     guard let error = evaluateError
                     else {
                         call.reject("Biometrics Error", "0")
                         return
                     }
                     
-                    switch error._code {
-                        
-                    case LAError.authenticationFailed.rawValue:
-                        errorCode = "10"
-                        
-                    case LAError.appCancel.rawValue:
-                        errorCode = "11"
-                        
-                    case LAError.invalidContext.rawValue:
-                        errorCode = "12"
-                        
-                    case LAError.notInteractive.rawValue:
-                        errorCode = "13"
-                        
-                    case LAError.passcodeNotSet.rawValue:
-                        errorCode = "14"
-                        
-                    case LAError.systemCancel.rawValue:
-                        errorCode = "15"
-                        
-                    case LAError.userCancel.rawValue:
-                        errorCode = "16"
-                        
-                    case LAError.userFallback.rawValue:
-                        errorCode = "17"
-                        
-                    case LAError.biometryNotAvailable.rawValue:
-                        errorCode = "1"
-                        
-                    case LAError.biometryLockout.rawValue:
-                        errorCode = "2" //"Authentication could not continue because the user has been locked out of biometric authentication, due to failing authentication too many times."
-                        
-                    case LAError.biometryNotEnrolled.rawValue:
-                        errorCode = "3" //message = "Authentication could not start because the user has not enrolled in biometric authentication."
-                        
-                    default:
-                        errorCode = "0" // Biometrics unavailable
-                    }
+                    let errorCode = self.errorBiometricVerificationMapper(error._code)
+                
                     call.reject(error.localizedDescription, errorCode, error )
                 }
                 
@@ -159,6 +122,51 @@ public class NativeBiometric: CAPPlugin {
         }else{
             call.reject("Authentication not available")
         }
+    }
+    
+    func errorBiometricVerificationMapper(_ error: Int) -> String {
+        var errorCode = "0"
+        
+        switch error {
+            
+        case LAError.authenticationFailed.rawValue:
+            errorCode = "10"
+            
+        case LAError.appCancel.rawValue:
+            errorCode = "11"
+            
+        case LAError.invalidContext.rawValue:
+            errorCode = "12"
+            
+        case LAError.notInteractive.rawValue:
+            errorCode = "13"
+            
+        case LAError.passcodeNotSet.rawValue:
+            errorCode = "14"
+            
+        case LAError.systemCancel.rawValue:
+            errorCode = "15"
+            
+        case LAError.userCancel.rawValue:
+            errorCode = "16"
+            
+        case LAError.userFallback.rawValue:
+            errorCode = "17"
+            
+        case LAError.biometryNotAvailable.rawValue:
+            errorCode = "1"
+            
+        case LAError.biometryLockout.rawValue:
+            errorCode = "2" //"Authentication could not continue because the user has been locked out of biometric authentication, due to failing authentication too many times."
+            
+        case LAError.biometryNotEnrolled.rawValue:
+            errorCode = "3" //message = "Authentication could not start because the user has not enrolled in biometric authentication."
+            
+        default:
+            errorCode = "0" // Biometrics unavailable
+        }
+        
+        return errorCode
     }
     
     @objc func getCredentials(_ call: CAPPluginCall){
@@ -260,45 +268,77 @@ public class NativeBiometric: CAPPlugin {
     }
     
     @objc func signData(_ call: CAPPluginCall){
+        let context = LAContext()
+        var canEvaluateError: NSError?
         var obj = JSObject()
         
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassKey,
-            kSecAttrKeyClass as String: kSecAttrKeyClassPrivate,
-            kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
-            kSecAttrKeySizeInBits as String: 2048,
-            kSecAttrApplicationTag as String: BIOMETRIC_KEY,
-            kSecReturnRef as String: true
-        ]
+        let useFallback = call.getBool("useFallback", false)
         
-        var item: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &item)
-        guard status == errSecSuccess else { return }
-        let privateKey = item as! SecKey
+        context.localizedFallbackTitle = ""
+        context.localizedCancelTitle = "Gunakan Pin"
         
-        guard let challengeString = call.getString("challengeString") else {
-            call.reject("No challenge string was provided")
-            return
-        }
+        let policy = useFallback ? LAPolicy.deviceOwnerAuthentication : LAPolicy.deviceOwnerAuthenticationWithBiometrics
         
-        guard let messageData = challengeString.data(using: String.Encoding.utf8) else {
-            call.reject("Invalid message to sign")
-            return
-        }
-        
-        do{
-            guard let signData = SecKeyCreateSignature(
-                privateKey,
-                SecKeyAlgorithm.rsaSignatureMessagePKCS1v15SHA256,
-                messageData as CFData, nil) else {
-                call.reject("Cannot sign data")
-                return
-            }
+        if context.canEvaluatePolicy(policy, error: &canEvaluateError){
             
-            let signedData = signData as Data
-            let signedString = signedData.base64EncodedString(options: [])
-            obj["signedData"] = signedString
-            call.resolve(obj)
+            let reason = call.getString("reason") ?? "For biometric authentication"
+            
+            context.evaluatePolicy(policy, localizedReason: reason) { [self] (success, evaluateError) in
+                
+                if success {
+                    let query: [String: Any] = [
+                        kSecClass as String: kSecClassKey,
+                        kSecAttrKeyClass as String: kSecAttrKeyClassPrivate,
+                        kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
+                        kSecAttrKeySizeInBits as String: 2048,
+                        kSecAttrApplicationTag as String: BIOMETRIC_KEY,
+                        kSecReturnRef as String: true
+                    ]
+                    
+                    var item: CFTypeRef?
+                    let status = SecItemCopyMatching(query as CFDictionary, &item)
+                    guard status == errSecSuccess else { return }
+                    let privateKey = item as! SecKey
+                    
+                    guard let challengeString = call.getString("challengeString") else {
+                        call.reject("No challenge string was provided")
+                        return
+                    }
+                    
+                    guard let messageData = challengeString.data(using: String.Encoding.utf8) else {
+                        call.reject("Invalid message to sign")
+                        return
+                    }
+                    
+                    do{
+                        guard let signData = SecKeyCreateSignature(
+                            privateKey,
+                            SecKeyAlgorithm.rsaSignatureMessagePKCS1v15SHA256,
+                            messageData as CFData, nil) else {
+                            call.reject("Cannot sign data")
+                            return
+                        }
+                        
+                        let signedData = signData as Data
+                        let signedString = signedData.base64EncodedString(options: [])
+                        obj["signedData"] = signedString
+                        call.resolve(obj)
+                    }
+                }else{
+                    guard let error = evaluateError
+                    else {
+                        call.reject("Biometrics Error", "0")
+                        return
+                    }
+                    
+                    let errorCode = self.errorBiometricVerificationMapper(error._code)
+                
+                    call.reject(error.localizedDescription, errorCode, error )
+                }
+                
+            }
+        }else{
+            call.reject("Authentication not available")
         }
     }
     
