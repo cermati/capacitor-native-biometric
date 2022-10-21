@@ -133,6 +133,7 @@ NativeBiometric.deleteCredentials({
 | systemCancel                    |"15" |
 | userCancel                      |"16" |
 | userFallback                    |"17" |
+| Biometry changed                |"666"|
    
 ### SetCredentialOptions
 

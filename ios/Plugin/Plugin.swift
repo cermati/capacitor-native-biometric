@@ -35,14 +35,8 @@ public class NativeBiometric: CAPPlugin {
         obj["biometryType"] = 0
         
         if LAContext.biometricsChanged() {
-            obj["isBiometryChanged"] = true
-            
-            // Reset LAContext.savedBiometricsPolicyState to nil after doing so
-            LAContext.savedBiometricsPolicyState = nil
-        }else {
-            // Handle biometrics changed
-            obj["isBiometryChanged"] = false
-        }
+                obj["isBiometryChanged"] = true
+            }
         
         let useFallback = call.getBool("useFallback", false)
         let policy = useFallback ? LAPolicy.deviceOwnerAuthentication : LAPolicy.deviceOwnerAuthenticationWithBiometrics
@@ -113,7 +107,7 @@ public class NativeBiometric: CAPPlugin {
                     }
                     
                     let errorCode = self.errorBiometricVerificationMapper(error._code)
-                
+                    
                     call.reject(error.localizedDescription, errorCode, error )
                 }
                 
@@ -122,51 +116,6 @@ public class NativeBiometric: CAPPlugin {
         }else{
             call.reject("Authentication not available")
         }
-    }
-    
-    func errorBiometricVerificationMapper(_ error: Int) -> String {
-        var errorCode = "0"
-        
-        switch error {
-            
-        case LAError.authenticationFailed.rawValue:
-            errorCode = "10"
-            
-        case LAError.appCancel.rawValue:
-            errorCode = "11"
-            
-        case LAError.invalidContext.rawValue:
-            errorCode = "12"
-            
-        case LAError.notInteractive.rawValue:
-            errorCode = "13"
-            
-        case LAError.passcodeNotSet.rawValue:
-            errorCode = "14"
-            
-        case LAError.systemCancel.rawValue:
-            errorCode = "15"
-            
-        case LAError.userCancel.rawValue:
-            errorCode = "16"
-            
-        case LAError.userFallback.rawValue:
-            errorCode = "17"
-            
-        case LAError.biometryNotAvailable.rawValue:
-            errorCode = "1"
-            
-        case LAError.biometryLockout.rawValue:
-            errorCode = "2" //"Authentication could not continue because the user has been locked out of biometric authentication, due to failing authentication too many times."
-            
-        case LAError.biometryNotEnrolled.rawValue:
-            errorCode = "3" //message = "Authentication could not start because the user has not enrolled in biometric authentication."
-            
-        default:
-            errorCode = "0" // Biometrics unavailable
-        }
-        
-        return errorCode
     }
     
     @objc func getCredentials(_ call: CAPPluginCall){
@@ -253,24 +202,18 @@ public class NativeBiometric: CAPPlugin {
         }
     }
     
-    func convertToPemPublicKey(_ b64Key: String) -> String {
-        let head = "-----BEGIN RSA PUBLIC KEY-----";
-        let body = b64Key
-        let tail = "-----END RSA PUBLIC KEY-----";
-        
-        let pemPublicKey = """
-            \(head)
-            \(body)
-            \(tail)
-            """;
-        
-        return pemPublicKey.toBase64();
-    }
-    
     @objc func signData(_ call: CAPPluginCall){
         let context = LAContext()
         var canEvaluateError: NSError?
         var obj = JSObject()
+        
+        guard !LAContext.biometricsChanged() else {
+            // Handle biometrics changed
+            call.reject("Biometrics changed", "666")
+            LAContext.savedBiometricsPolicyState = nil
+            
+            return
+        }
         
         let useFallback = call.getBool("useFallback", false)
         
@@ -332,7 +275,7 @@ public class NativeBiometric: CAPPlugin {
                     }
                     
                     let errorCode = self.errorBiometricVerificationMapper(error._code)
-                
+                    
                     call.reject(error.localizedDescription, errorCode, error )
                 }
                 
@@ -340,6 +283,51 @@ public class NativeBiometric: CAPPlugin {
         }else{
             call.reject("Authentication not available")
         }
+    }
+    
+    func errorBiometricVerificationMapper(_ error: Int) -> String {
+        var errorCode = "0"
+        
+        switch error {
+            
+        case LAError.authenticationFailed.rawValue:
+            errorCode = "10"
+            
+        case LAError.appCancel.rawValue:
+            errorCode = "11"
+            
+        case LAError.invalidContext.rawValue:
+            errorCode = "12"
+            
+        case LAError.notInteractive.rawValue:
+            errorCode = "13"
+            
+        case LAError.passcodeNotSet.rawValue:
+            errorCode = "14"
+            
+        case LAError.systemCancel.rawValue:
+            errorCode = "15"
+            
+        case LAError.userCancel.rawValue:
+            errorCode = "16"
+            
+        case LAError.userFallback.rawValue:
+            errorCode = "17"
+            
+        case LAError.biometryNotAvailable.rawValue:
+            errorCode = "1"
+            
+        case LAError.biometryLockout.rawValue:
+            errorCode = "2" //"Authentication could not continue because the user has been locked out of biometric authentication, due to failing authentication too many times."
+            
+        case LAError.biometryNotEnrolled.rawValue:
+            errorCode = "3" //message = "Authentication could not start because the user has not enrolled in biometric authentication."
+            
+        default:
+            errorCode = "0" // Biometrics unavailable
+        }
+        
+        return errorCode
     }
     
     @objc func biometricKeysExist(_ call: CAPPluginCall){
@@ -392,6 +380,20 @@ public class NativeBiometric: CAPPlugin {
         let publicKey = SecKeyCopyPublicKey(privateKey)!
         
         return publicKey
+    }
+    
+    func convertToPemPublicKey(_ b64Key: String) -> String {
+        let head = "-----BEGIN RSA PUBLIC KEY-----";
+        let body = b64Key
+        let tail = "-----END RSA PUBLIC KEY-----";
+        
+        let pemPublicKey = """
+            \(head)
+            \(body)
+            \(tail)
+            """;
+        
+        return pemPublicKey.toBase64();
     }
     
     func deleteBiometricKey() throws {
