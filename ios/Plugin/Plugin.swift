@@ -92,7 +92,7 @@ public class NativeBiometric: CAPPlugin {
         let useFallback = call.getBool("useFallback", false)
         
         context.localizedFallbackTitle = ""
-        context.localizedCancelTitle = "Use PIN"
+        context.localizedCancelTitle = call.getString("negativeButtonText") ?? "Gunakan Pin"
         
         let policy = useFallback ? LAPolicy.deviceOwnerAuthentication : LAPolicy.deviceOwnerAuthenticationWithBiometrics
         

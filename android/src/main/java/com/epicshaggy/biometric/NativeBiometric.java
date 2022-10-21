@@ -123,7 +123,13 @@ public class NativeBiometric extends Plugin {
         JSObject ret = new JSObject();
 
         biometricManager = BiometricManager.from(getContext());
-        int canAuthenticateResult = biometricManager.canAuthenticate(BIOMETRIC_STRONG);
+        int canAuthenticateResult;
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            canAuthenticateResult = biometricManager.canAuthenticate(BIOMETRIC_STRONG);
+        } else {
+            canAuthenticateResult = biometricManager.canAuthenticate();
+        }
 
         Boolean biometryChanged = cipherInit();
 
