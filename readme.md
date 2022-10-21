@@ -120,6 +120,7 @@ NativeBiometric.deleteCredentials({
 |ERROR_NEGATIVE_BUTTON          | "13"|
 |ERROR_NO_DEVICE_CREDENTIAL     | "14"|
 |ERROR_SECURITY_UPDATE_REQUIRED | "15"|
+|KeyPermanentlyInvalidated      |"666"|
 #### iOS
 | Description                     |Code |
 | ------------------------------- |-----|
