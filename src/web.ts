@@ -9,7 +9,9 @@ import {
   Credentials,
   SignDataOptions,
   PublicKey,
-  SignedData
+  SignedData,
+  KeyExist,
+  KeysDeleted
 } from "./definitions";
 
 export class NativeBiometricWeb
@@ -18,6 +20,13 @@ export class NativeBiometricWeb
 {
   constructor() {
     super();
+  }
+  
+  biometricKeyExist(): Promise<KeyExist> {
+    throw new Error("Method not implemented.");
+  }
+  deleteKeyPair(): Promise<KeysDeleted> {
+    throw new Error("Method not implemented.");
   }
 
   isAvailable(): Promise<AvailableResult> {
