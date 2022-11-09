@@ -27,6 +27,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.cert.CertificateException;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 
 public class AuthSignActivity extends AppCompatActivity {
@@ -76,7 +77,11 @@ public class AuthSignActivity extends AppCompatActivity {
 
         try {
             //Retrieves the private key from the keystore
-            PrivateKey privateKey = (PrivateKey) keyStore.getKey(DEFAULT_KEY, null);
+            PrivateKey privateKey = null;
+
+            if (keyStore != null) {
+                privateKey = (PrivateKey) keyStore.getKey(DEFAULT_KEY, null);
+            }
 
             //Sign the data with the private key using RSA algorithm along SHA-256 digest algorithm
             Signature signature = Signature.getInstance("SHA256withRSA");
@@ -113,11 +118,25 @@ public class AuthSignActivity extends AppCompatActivity {
 
                     try {
                         BiometricPrompt.CryptoObject cryptoObject = result.getCryptoObject();
-                        Signature cryptoSignature = cryptoObject.getSignature();
+                        Signature cryptoSignature = null;
+
+                        if (cryptoObject != null) {
+                            cryptoSignature = cryptoObject.getSignature();
+                        }
+
                         Charset charset = StandardCharsets.UTF_8;
-                        byte[] challengeData = getIntent().getStringExtra("challengeString").getBytes(charset);
-                        cryptoSignature.update(challengeData);
-                        byte[] signed = cryptoSignature.sign();
+                        byte[] challengeData = Objects.requireNonNull(getIntent().getStringExtra("challengeString")).getBytes(charset);
+
+                        if (cryptoSignature != null) {
+                            cryptoSignature.update(challengeData);
+                        }
+
+                        byte[] signed = new byte[0];
+
+                        if (cryptoSignature != null) {
+                            signed = cryptoSignature.sign();
+                        }
+
                         signedString = Base64.encodeToString(signed, Base64.DEFAULT);
                     } catch (Exception e) {
                         e.printStackTrace();
